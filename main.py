@@ -31,7 +31,6 @@ from typing import List, Tuple
 SpectrumTuple = collections.namedtuple(
     "SpectrumTuple", ["precursor_mz", "precursor_charge", "mz", "intensity"]
 )
-
 def _cosine_fast(
     spec: SpectrumTuple,
     spec_other: SpectrumTuple,
@@ -120,15 +119,15 @@ def norm_intensity(intensity):
 
 def realign_path(path):
     final_match_list=[]
-    spec_1 = SpectrumTuple(cluster_summary_df.loc[path[0]-1]["Precursor_MZ"],cluster_summary_df.loc[path[0]-1]["Charge"],spec_dic[str(path[0])]['mz'],norm_intensity(spec_dic[str(path[0])]['intensity']))
-    spec_2 = SpectrumTuple(cluster_summary_df.loc[path[0+1]-1]["Precursor_MZ"],cluster_summary_df.loc[path[0+1]-1]["Charge"],spec_dic[str(path[0+1])]['mz'],norm_intensity(spec_dic[str(path[0+1])]['intensity']))
+    spec_1 = spec_dic[path[0]]
+    spec_2 = spec_dic[path[0+1]]
     score,peak_matches = _cosine_fast(spec_1,spec_2,0.1,True)
     final_match_list=peak_matches
     idx=1
     while (len(final_match_list)!=0 and idx <len(path)-1):
         temp_peakmatch_list=[]
-        spec_1 = SpectrumTuple(cluster_summary_df.loc[path[idx]-1]["Precursor_MZ"],cluster_summary_df.loc[path[idx]-1]["Charge"],spec_dic[str(path[idx])]['mz'],norm_intensity(spec_dic[str(path[idx])]['intensity']))
-        spec_2 = SpectrumTuple(cluster_summary_df.loc[path[idx+1]-1]["Precursor_MZ"],cluster_summary_df.loc[path[idx+1]-1]["Charge"],spec_dic[str(path[idx+1])]['mz'],norm_intensity(spec_dic[str(path[idx+1])]['intensity']))
+        spec_1 = spec_dic[path[idx]]
+        spec_2 = spec_dic[path[idx+1]]
         score,peak_matches = _cosine_fast(spec_1,spec_2,0.1,True)
         peak_dic1=peak_tuple_to_dic(final_match_list)
         peak_dic2=peak_tuple_to_dic(peak_matches)
@@ -137,12 +136,12 @@ def realign_path(path):
                 temp_peakmatch_list.append((key,peak_dic2[value]))
         final_match_list=temp_peakmatch_list
         idx=idx+1
-    spec_start = SpectrumTuple(cluster_summary_df.loc[path[0]-1]["Precursor_MZ"],cluster_summary_df.loc[path[0]-1]["Charge"],spec_dic[str(path[0])]['mz'],norm_intensity(spec_dic[str(path[0])]['intensity']))
-    spec_end = SpectrumTuple(cluster_summary_df.loc[path[-1]-1]["Precursor_MZ"],cluster_summary_df.loc[path[-1]-1]["Charge"],spec_dic[str(path[-1])]['mz'],norm_intensity(spec_dic[str(path[-1])]['intensity']))
+    spec_start = spec_dic[path[0]]
+    spec_end = spec_dic[path[-1]]
     _, matched_peaks = _cosine_fast(spec_start,spec_end,0.1,True)
     peak_match_scores = []
-    intesity1=norm_intensity(spec_dic[str(path[0])]["intensity"])
-    intesity2=norm_intensity(spec_dic[str(path[-1])]["intensity"])
+    intesity1=spec_dic[path[0]][3]
+    intesity2=spec_dic[path[-1]][3]
     if (len(final_match_list)):
         final_match_list=final_match_list+matched_peaks
         for matched_peak in final_match_list:
@@ -229,19 +228,21 @@ components=filt_single_graph(G_all_pairs)
 if __name__ == '__main__':
     # create a pool of processes
     spec_dic = {}
-    for spectrum in mgf.read("converted.mgf"):
+    print("Start create spectrum dictionary")
+    for spectrum in tqdm(mgf.read("converted.mgf")):
         params = spectrum.get('params')
+        precursor_mz = cluster_summary_df.loc[int(params['scans'])-1]["Precursor_MZ"]
+        charge = cluster_summary_df.loc[int(params['scans'])-1]["Charge"]
         mz = spectrum.get('m/z array')
         intensity = spectrum.get('intensity array')
-        spec_dic[params['scans']] = {}
-        spec_dic[params['scans']]['mz'] = mz
-        spec_dic[params['scans']]['intensity'] = intensity
+        spec_dic[int(params['scans'])] = SpectrumTuple(precursor_mz,charge,mz,norm_intensity(intensity))
 
 
-    with Pool() as pool:
+    with Pool(processes=14,maxtasksperchild=1000) as pool:
         # define the range of values you want to loop over
         values = [[node1,node2] for [node1,node2] in nx.non_edges(G_all_pairs)]
         # apply the function to each value in the loop using imap_unordered
         results = list(tqdm(pool.imap(re_alignment_parallel, values), total=len(values)))
+
         # print the results
     nx.write_graphml(G_all_pairs_realignment,"G_all_pairs_realignment.graphml")
