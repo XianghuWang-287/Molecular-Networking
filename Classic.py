@@ -22,7 +22,7 @@ import requests
 import plotly.express as px
 from IPython.display import HTML
 from utility import *
-from Classic import *
+
 
 def prune_component(G, component, cosine_delta=0.02):
     component_edges = get_edges_of_component(G, component)

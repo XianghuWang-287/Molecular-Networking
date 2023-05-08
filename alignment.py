@@ -1,6 +1,4 @@
 import pandas as pd
-from gnpsdata import taskresult
-from gnpsdata import workflow_classicnetworking
 import networkx as nx
 import matplotlib.pyplot as plt
 import time
@@ -28,6 +26,8 @@ from multiprocessing import Pool
 import collections
 from typing import List, Tuple
 import pickle
+import os
+import argparse
 
 SpectrumTuple = collections.namedtuple(
     "SpectrumTuple", ["precursor_mz", "precursor_charge", "mz", "intensity"]
@@ -198,52 +198,47 @@ def re_alignment_parallel(args):
         return
 
 
-classic_networking_task = "9b79d3dd2322454da4b475fbb1081fbb"
-# This is the Network Created by Classic Molecular Networking with the Default Layout, this includes all the structure infomration
-classic_network_G = workflow_classicnetworking.get_graphml_network(classic_networking_task)
-classic_network_G = nx.read_graphml("temp.graphml")
-
-# Getting defautl classic networking data from scratch
-# cluster_summary_df = taskresult.get_task_resultview_dataframe(classic_networking_task, "view_all_clusters_withID_beta")
-cluster_summary_df = pd.read_csv("summary.tsv")
-
-# classic_df_DB = taskresult.get_task_resultview_dataframe(classic_networking_task, "view_all_annotations_DB")
-
-# Downloading all pairs from BareBones Networking, which calculates all pairs but does not do topology filtering
-# all_pairs_task = "0b2207d0925c4568adabfcb063e8ca46"
-# all_pairs_df = taskresult.get_task_resultview_dataframe(all_pairs_task, "view_results")
-all_pairs_df = pd.read_csv("merged_pairs.tsv",sep='\t')
-G_all_pairs =  nx.from_pandas_edgelist(all_pairs_df, "CLUSTERID1", "CLUSTERID2", "Cosine") #Generate network from all pairs data frame
-G_all_pairs_realignment=G_all_pairs.copy()
-#dic_fp=fingerprint_dic_construct(cluster_summary_df)
-# dic_fp_classic=fingerprint_dic_construct_networkx(classic_network_G)
-components=filt_single_graph(G_all_pairs)
-# score_all_pair_original=[]
-# for component in tqdm(components):
-#     score_all_pair_original.append(subgraph_score_dic(component,classic_network_G,cluster_summary_df,dic_fp))
-# all_pairs_original_number = [len(x) for x in components]
-# df_all_pairs_original=pd.DataFrame(list(zip(score_all_pair_original,all_pairs_original_number)), columns=['score','number'])
-# print(weighted_average(df_all_pairs_original, 'score', 'number'))
-# re_alignment(G_all_pairs)
 if __name__ == '__main__':
-    # create a pool of processes
-    spec_dic = {}
-    print("Start create spectrum dictionary")
-    for spectrum in tqdm(mgf.read("converted.mgf")):
-        params = spectrum.get('params')
-        precursor_mz = cluster_summary_df.loc[int(params['scans'])-1]["Precursor_MZ"]
-        charge = cluster_summary_df.loc[int(params['scans'])-1]["Charge"]
-        mz = spectrum.get('m/z array')
-        intensity = spectrum.get('intensity array')
-        spec_dic[int(params['scans'])] = SpectrumTuple(precursor_mz,charge,mz,norm_intensity(intensity))
+    #pass arguments
+    parser = argparse.ArgumentParser(description='Using realignment method to reconstruct the network')
+    parser.add_argument('--input', type=str,required=True,default="input_library.txt", help='input libraries')
+    args = parser.parse_args()
+    input_lib_file = args.input
+    result_file_path = "./alignment_results/test_alignment.pkl"
+    with open(result_file_path, 'wb') as file:
+        pickle.dump("test", file)
+    #read libraries from input file
+    with open(input_lib_file,'r') as f:
+        libraries = f.readlines()
 
+    for library in libraries:
+        library = library.strip('\n')
+        print("starting align library:"+library)
+        summary_file_path = "./data/summary/"+library+"_summary.tsv"
+        merged_pairs_file_path = "./data/merged_paris/"+library+"_merged_pairs.tsv"
+        mgf_file_path = "./data/converted/"+library+"_converted.mgf"
+        cluster_summary_df = pd.read_csv(summary_file_path)
+        all_pairs_df = pd.read_csv(merged_pairs_file_path, sep='\t')
+        G_all_pairs = nx.from_pandas_edgelist(all_pairs_df, "CLUSTERID1", "CLUSTERID2", "Cosine")
+        G_all_pairs_realignment = G_all_pairs.copy()
+        spec_dic = {}
+        print("Start create spectrum dictionary")
+        for spectrum in tqdm(mgf.read(mgf_file_path)):
+            params = spectrum.get('params')
+            precursor_mz = cluster_summary_df.loc[int(params['scans']) - 1]["Precursor_MZ"]
+            charge = cluster_summary_df.loc[int(params['scans']) - 1]["Charge"]
+            mz = spectrum.get('m/z array')
+            intensity = spectrum.get('intensity array')
+            spec_dic[int(params['scans'])] = SpectrumTuple(precursor_mz, charge, mz, norm_intensity(intensity))
 
-    with Pool(processes=30,maxtasksperchild=1000) as pool:
-        # define the range of values you want to loop over
-        values = [[node1,node2] for [node1,node2] in nx.non_edges(G_all_pairs)]
-        # apply the function to each value in the loop using imap_unordered
-        results = list(tqdm(pool.imap(re_alignment_parallel, values), total=len(values)))
-        # print the results
-    with open('re_alignment_results.pkl', 'wb') as f:
-        pickle.dump(results, f)
-    nx.write_graphml(G_all_pairs_realignment,"G_all_pairs_realignment.graphml")
+        with Pool(processes=28, maxtasksperchild=1000) as pool:
+            # define the range of values you want to loop over
+            values = [[node1, node2] for [node1, node2] in nx.non_edges(G_all_pairs)]
+            # apply the function to each value in the loop using imap_unordered
+            results = list(tqdm(pool.imap(re_alignment_parallel, values), total=len(values)))
+            # print the results
+        result_file_path = "./alignment_results/" + library + "_realignment.pkl"
+        with open(result_file_path, 'wb') as f:
+            pickle.dump(results, f)
+    print("Finish align all libraries")
+

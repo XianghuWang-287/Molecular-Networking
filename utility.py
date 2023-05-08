@@ -64,15 +64,13 @@ from IPython.display import HTML
 #     return FingerprintSimilarity(fp1, fp2)
 
 
-def comp_structure_online(G,df, node1, node2):
+def comp_structure_online(G, node1, node2):
     if (isinstance(node1, str)):
         smiles1 = urllib.parse.quote(G.nodes[node1]["Smiles"])
         smiles2 = urllib.parse.quote(G.nodes[node2]["Smiles"])
     else:
-        smiles1 = urllib.parse.quote(
-            df.loc[df['SpectrumID'] == df.loc[node1 - 1]['SpectrumID'], "Smiles"].values[0])
-        smiles2 = urllib.parse.quote(
-            df.loc[df['SpectrumID'] == df.loc[node2 - 1]['SpectrumID'], "Smiles"].values[0])
+        smiles1 = urllib.parse.quote(G.loc[G['scan']==node1]["Smiles"].values[0])
+        smiles2 = urllib.parse.quote(G.loc[G['scan']==node2]["Smiles"].values[0])
     compare_url = "https://gnps-structure.ucsd.edu/structuresimilarity?smiles1={}&smiles2={}".format(smiles1, smiles2)
     r = requests.get(compare_url)
     return r.text
@@ -92,6 +90,12 @@ def fingerprint_dic_construct(G):
     dic={}
     for index in tqdm(range(len(G))):
         try:
+            if (G.nodes[str(index)]['Smiles'] == "N/A"):
+                inchi = G.nodes[str(index)]['INCHI']
+                mol = Chem.MolFromInchi(inchi)
+                fp = FingerprintMol(mol)
+                dic[inchi] = fp
+                continue
             smiles=G.iloc[index]['Smiles']
             #print(smiles)
             mol = Chem.MolFromSmiles(smiles.replace('\\\\','\\'))
@@ -106,6 +110,12 @@ def fingerprint_dic_construct_networkx(G):
     dic={}
     for node in tqdm(G.nodes()):
         try:
+            if (G.nodes[str(node)]['Smiles'] == "N/A"):
+                inchi = G.nodes[str(node)]['INCHI']
+                mol = Chem.MolFromInchi(inchi)
+                fp = FingerprintMol(mol)
+                dic[inchi] = fp
+                continue
             smiles=G.nodes[str(node)]['Smiles']
             mol = Chem.MolFromSmiles(smiles.replace('\\\\','\\'))
             fp=FingerprintMol(mol)
@@ -114,7 +124,7 @@ def fingerprint_dic_construct_networkx(G):
             continue
     return dic
 
-def subgraph_score_dic(G,classic,df, dic_fp):
+def subgraph_score_dic(G,df, dic_fp):
     score = 0
     edge_num = G.number_of_edges()
     error=0
@@ -124,7 +134,7 @@ def subgraph_score_dic(G,classic,df, dic_fp):
         try:
             node1 = edge[0]
             node2=  edge[1]
-            score += float(comp_structure_dic(classic,df,node1,node2, dic_fp))
+            score += float(comp_structure_dic(df,node1,node2, dic_fp))
         except Exception:
             #print(node1, node2) #mute/active node error message
             error=error+1
@@ -135,19 +145,22 @@ def subgraph_score_dic(G,classic,df, dic_fp):
     else:
         return score/edge_num
 
-def comp_structure_dic(classic,df, node1, node2, dic_fp):
+def comp_structure_dic(G, node1, node2, dic_fp):
     if(isinstance(node1,str)):
-        smiles1 = classic.nodes[node1]["Smiles"]
-        smiles2 = classic.nodes[node2]["Smiles"]
+        smiles1 = G.nodes[node1]["Smiles"]
+        smiles2 = G.nodes[node2]["Smiles"]
+    elif (G.loc[G['scan']==node1]["Smiles"].values[0]!="N/A"):
+        smiles1 =  G.loc[G['scan']==node1]["Smiles"].values[0]
+        smiles2 =  G.loc[G['scan']==node2]["Smiles"].values[0]
     else:
-        smiles1 = df.loc[df['SpectrumID']==df.loc[node1-1]['SpectrumID'],"Smiles"].values[0]
-        smiles2 = df.loc[df['SpectrumID']==df.loc[node2-1]['SpectrumID'],"Smiles"].values[0]
+        smiles1 =  G.loc[G['scan']==node1]["INCHI"].values[0]
+        smiles2 =  G.loc[G['scan']==node2]["INCHI"].values[0]
     try:
         fp1=dic_fp[smiles1]
         fp2=dic_fp[smiles2]
         return FingerprintSimilarity(fp1,fp2)
     except Exception:
-        return comp_structure_online(classic,df, node1, node2)
+        return comp_structure_online(G, node1, node2)
 
 def re_alignment(G):
     for node1, node2 in tqdm(nx.non_edges(G)):
