@@ -90,12 +90,6 @@ def fingerprint_dic_construct(G):
     dic={}
     for index in tqdm(range(len(G))):
         try:
-            if (G.nodes[str(index)]['Smiles'] == "N/A"):
-                inchi = G.nodes[str(index)]['INCHI']
-                mol = Chem.MolFromInchi(inchi)
-                fp = FingerprintMol(mol)
-                dic[inchi] = fp
-                continue
             smiles=G.iloc[index]['Smiles']
             #print(smiles)
             mol = Chem.MolFromSmiles(smiles.replace('\\\\','\\'))
@@ -176,3 +170,40 @@ def re_alignment(G):
                     Max_path_weight=Path_weight
                     Max_path=hop
             #print(Max_path_weight,Max_path)
+
+def generate_candidates(G, C):
+    if (len(C)==1):
+        return [n for n in G.neighbors(C[0])]
+    else:
+        res = set([n for n in G.neighbors(C[0])])
+        for item in C[1:]:
+            res=res & set([n for n in G.neighbors(item)])
+    return list(res)
+def CAST_cluster(G, theta):
+    sorted_node=list(sorted(G.degree, key=lambda x: x[1], reverse=True))
+    S = [n[0] for n in sorted_node]
+    P=[]
+    while (len(S)):
+        v=S[0]
+        C=[]
+        C.append(v)
+        candidates=generate_candidates(G,C)
+        while(len(candidates)):
+            can_dic={}
+            nonematch_flag=1
+            for candidate in candidates:
+                avg_weight=0
+                for node in C:
+                    avg_weight += G.edges[candidate,node]['Cosine']
+                avg_weight=avg_weight/len(C)
+                if avg_weight>theta:
+                    can_dic[candidate]=avg_weight
+                    nonematch_flag=0
+            if (nonematch_flag):
+                break
+            close_node =  max(can_dic,key=can_dic.get)
+            C.append(close_node)
+            candidates=generate_candidates(G,C)
+        P.append(C)
+        S=[x for x in S if x not in C]
+    return P
