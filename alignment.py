@@ -26,6 +26,7 @@ from multiprocessing import Pool
 import collections
 from typing import List, Tuple
 import pickle
+import math
 import os
 import argparse
 
@@ -227,11 +228,23 @@ if __name__ == '__main__':
             params = spectrum.get('params')
             precursor_mz = cluster_summary_df.loc[int(params['scans']) - 1]["Precursor_MZ"]
             charge = cluster_summary_df.loc[int(params['scans']) - 1]["Charge"]
-            mz = spectrum.get('m/z array')
-            intensity = spectrum.get('intensity array')
-            spec_dic[int(params['scans'])] = SpectrumTuple(precursor_mz, charge, mz, norm_intensity(intensity))
+            mz_array = spectrum.get('m/z array')
+            intensity_array = spectrum.get('intensity array')
+            filtered_mz = []
+            filtered_intensities = []
+            precursor_value = float(
+                cluster_summary_df.loc[cluster_summary_df['scan'] == int(params['scans'])]["Precursor_MZ"].values[0])
+            for i, mz in enumerate(mz_array):
+                value_range = [x for x in mz_array if abs(x - mz) <= 25]
+                sorted_range = sorted(value_range, reverse=True)
+                if mz not in sorted_range[:6]:
+                    if abs(mz - precursor_value) > 17:
+                        filtered_mz.append(mz)
+                        filtered_intensities.append(intensity_array[i])
+            filtered_intensities = [math.sqrt(x) for x in filtered_intensities]
+            spec_dic[int(params['scans'])] = SpectrumTuple(precursor_mz, charge, filtered_mz, norm_intensity(filtered_intensities))
 
-        with Pool(processes=28, maxtasksperchild=1000) as pool:
+        with Pool(processes=30, maxtasksperchild=1000) as pool:
             # define the range of values you want to loop over
             values = [[node1, node2] for [node1, node2] in nx.non_edges(G_all_pairs)]
             # apply the function to each value in the loop using imap_unordered
