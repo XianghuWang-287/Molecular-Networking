@@ -47,49 +47,28 @@ if __name__ == '__main__':
         print("starting benchmarking library:"+library)
         summary_file_path = "./data/summary/"+library+"_summary.tsv"
         merged_pairs_file_path = "./data/merged_paris/"+library+"_merged_pairs.tsv"
-        re_align_edge_file_path = "./alignment_results/"+library+"_realignment.pkl"
         cluster_summary_df = pd.read_csv(summary_file_path)
         all_pairs_df = pd.read_csv(merged_pairs_file_path, sep='\t')
         G_all_pairs = nx.from_pandas_edgelist(all_pairs_df, "CLUSTERID1", "CLUSTERID2", "Cosine")
         print('graph with {} nodes and {} edges'.format(G_all_pairs.number_of_nodes(), G_all_pairs.number_of_edges()))
         print("constructing dic for finger print")
         dic_fp = fingerprint_dic_construct(cluster_summary_df)
-        print("constructing the re-alignment graph")
-        G_all_pairs_realignment = G_all_pairs.copy()
-        with open(re_align_edge_file_path, 'rb') as f:
-            realignment_edgelist = pickle.load(f)
-        new_list=[]
-        for item in realignment_edgelist:
-            if(item != None):
-                if item[2]>=0.7:
-                    new_list.append(item)
-        print(len(new_list))
-        for item in new_list:
-            if (item != None):
-                G_all_pairs_realignment.add_edge(item[0], item[1], Cosine=item[2])
+        x_max_number = [x for x in range(1, 40, 2)]
+        y_max_number = [y for y in range(2, 402, 20)]
         y_weight_avg = []
         components_all_list = []
         results_df_list = []
-        for max_k in tqdm(range(1, 40, 2)):
-            for max_c in range(2, 102, 5):
-                G_all_pairs_filter = G_all_pairs_realignment.copy()
-                filter_top_k(G_all_pairs_filter, max_k)
-                filter_component(G_all_pairs_filter, max_c)
-                G_all_pairs_filter_copy = G_all_pairs_filter.copy()
-                for node in G_all_pairs_filter_copy.nodes():
-                    if G_all_pairs_filter.degree[node] == 0:
-                        G_all_pairs_filter.remove_node(node)
-                score_all_pairs_filter_list = []
-                components = [G_all_pairs_filter.subgraph(c).copy() for c in
-                              nx.connected_components(G_all_pairs_filter)]
-                components_all_list.append(components)
-                for component in components:
-                    score_all_pairs_filter_list.append(subgraph_score_dic(component, cluster_summary_df, dic_fp))
-                all_pairs_filter_number = [len(x) for x in components]
-                df_all_pairs_filter = pd.DataFrame(list(zip(score_all_pairs_filter_list, all_pairs_filter_number)),
-                                                   columns=['score', 'number'])
-                results_df_list.append(df_all_pairs_filter)
-        result_file_path = "./results-re/"+library+"_re_classic_benchmark.pkl"
+        thresholds = [x / 100 for x in range(75, 95)]
+        for threshold in tqdm(thresholds):
+            cast_cluster = CAST_cluster(G_all_pairs, threshold)
+            cast_score_list = []
+            cast_components = [G_all_pairs.subgraph(c).copy() for c in cast_cluster]
+            for component in cast_components:
+                cast_score_list.append(subgraph_score_dic(component, cluster_summary_df, dic_fp))
+            cast_number = [len(x) for x in cast_cluster]
+            df_cast = pd.DataFrame(list(zip(cast_score_list, cast_number)), columns=['score', 'number'])
+            results_df_list.append(df_cast)
+        result_file_path = "./results-cast/" + library + "_cast_benchmark.pkl"
         with open(result_file_path, 'wb') as file:
             pickle.dump(results_df_list, file)
 

@@ -244,7 +244,7 @@ if __name__ == '__main__':
             filtered_intensities = [math.sqrt(x) for x in filtered_intensities]
             spec_dic[int(params['scans'])] = SpectrumTuple(precursor_mz, charge, filtered_mz, norm_intensity(filtered_intensities))
 
-        with Pool(processes=30, maxtasksperchild=1000) as pool:
+        with Pool(processes=25, maxtasksperchild=1000) as pool:
             # define the range of values you want to loop over
             values = [[node1, node2] for [node1, node2] in nx.non_edges(G_all_pairs)]
             # apply the function to each value in the loop using imap_unordered

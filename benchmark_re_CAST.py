@@ -67,29 +67,18 @@ if __name__ == '__main__':
         for item in new_list:
             if (item != None):
                 G_all_pairs_realignment.add_edge(item[0], item[1], Cosine=item[2])
-        y_weight_avg = []
-        components_all_list = []
         results_df_list = []
-        for max_k in tqdm(range(1, 40, 2)):
-            for max_c in range(2, 102, 5):
-                G_all_pairs_filter = G_all_pairs_realignment.copy()
-                filter_top_k(G_all_pairs_filter, max_k)
-                filter_component(G_all_pairs_filter, max_c)
-                G_all_pairs_filter_copy = G_all_pairs_filter.copy()
-                for node in G_all_pairs_filter_copy.nodes():
-                    if G_all_pairs_filter.degree[node] == 0:
-                        G_all_pairs_filter.remove_node(node)
-                score_all_pairs_filter_list = []
-                components = [G_all_pairs_filter.subgraph(c).copy() for c in
-                              nx.connected_components(G_all_pairs_filter)]
-                components_all_list.append(components)
-                for component in components:
-                    score_all_pairs_filter_list.append(subgraph_score_dic(component, cluster_summary_df, dic_fp))
-                all_pairs_filter_number = [len(x) for x in components]
-                df_all_pairs_filter = pd.DataFrame(list(zip(score_all_pairs_filter_list, all_pairs_filter_number)),
-                                                   columns=['score', 'number'])
-                results_df_list.append(df_all_pairs_filter)
-        result_file_path = "./results-re/"+library+"_re_classic_benchmark.pkl"
+        thresholds = [x / 100 for x in range(75, 95)]
+        for threshold in tqdm(thresholds):
+            cast_cluster = CAST_cluster(G_all_pairs, threshold)
+            cast_score_list = []
+            cast_components = [G_all_pairs.subgraph(c).copy() for c in cast_cluster]
+            for component in cast_components:
+                cast_score_list.append(subgraph_score_dic(component,cluster_summary_df,dic_fp))
+            cast_number = [len(x) for x in cast_cluster]
+            df_cast = pd.DataFrame(list(zip(cast_score_list, cast_number)), columns=['score', 'number'])
+            results_df_list.append(df_cast)
+        result_file_path = "./results-re-cast/"+library+"_re_cast_benchmark.pkl"
         with open(result_file_path, 'wb') as file:
             pickle.dump(results_df_list, file)
 
