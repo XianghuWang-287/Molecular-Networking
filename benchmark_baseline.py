@@ -28,7 +28,15 @@ from typing import List, Tuple
 import pickle
 import os
 import argparse
-
+def cal_N50(df, node_numbers,N_ratio):
+    dfnew=df.sort_values('number',ascending=False)
+    number=0
+    for row in dfnew.values:
+        if (number >= node_numbers*N_ratio):
+            return row_old
+        else:
+            number=number+ row[1]
+            row_old = row[1]
 
 
 if __name__ == '__main__':
@@ -45,43 +53,27 @@ if __name__ == '__main__':
     for library in libraries:
         library = library.strip('\n')
         print("starting benchmarking library:"+library)
-        summary_file_path = "./data/summary/"+library+"_summary.tsv"
+        summary_file_path = "./data/summary/GNPS-NIH-SMALLMOLECULEPHARMACOLOGICALLYACTIVE_summary.tsv"
         merged_pairs_file_path = "./data/merged_paris/"+library+"_merged_pairs.tsv"
-        re_align_edge_file_path = "./alignment_results/"+library+"_realignment.pkl"
         cluster_summary_df = pd.read_csv(summary_file_path)
         all_pairs_df = pd.read_csv(merged_pairs_file_path, sep='\t')
         G_all_pairs = nx.from_pandas_edgelist(all_pairs_df, "CLUSTERID1", "CLUSTERID2", "Cosine")
         print('graph with {} nodes and {} edges'.format(G_all_pairs.number_of_nodes(), G_all_pairs.number_of_edges()))
         print("constructing dic for finger print")
         dic_fp = fingerprint_dic_construct(cluster_summary_df)
-        print("constructing the re-alignment graph")
-        G_all_pairs_realignment = G_all_pairs.copy()
-        with open(re_align_edge_file_path, 'rb') as f:
-            realignment_edgelist = pickle.load(f)
-        new_list=[]
-        for item in realignment_edgelist:
-            if(item != None):
-                if item[2]>=0.80:
-                    new_list.append(item)
-        print(len(new_list))
-        for item in new_list:
-            if (item != None):
-                G_all_pairs_realignment.add_edge(item[0], item[1], Cosine=item[2])
-        results_df_list = []
-        thresholds = [x / 100 for x in range(75, 95)]
-        for threshold in tqdm(thresholds):
-            cast_cluster = CAST_cluster(G_all_pairs, threshold)
-            cast_score_list = []
-            cast_components = [G_all_pairs.subgraph(c).copy() for c in cast_cluster]
-            for component in cast_components:
-                cast_score_list.append(subgraph_score_dic(component,cluster_summary_df,dic_fp))
-            cast_number = [len(x) for x in cast_cluster]
-            df_cast = pd.DataFrame(list(zip(cast_score_list, cast_number)), columns=['score', 'number'])
-            results_df_list.append(df_cast)
-        result_file_path = "./results-re-cast/"+library+"_re_cast_benchmark.pkl"
+        results_df_list=[]
+        score_all_pairs_filter_list=[]
+        components = [G_all_pairs.subgraph(c).copy() for c in nx.connected_components(G_all_pairs)]
+        for component in tqdm(components):
+            score_all_pairs_filter_list.append(subgraph_score_dic(component,cluster_summary_df,dic_fp))
+        all_pairs_filter_number = [len(x) for x in components]
+        df_all_pairs_filter = pd.DataFrame(list(zip(score_all_pairs_filter_list, all_pairs_filter_number)),columns=['score', 'number'])
+        results_df_list.append(df_all_pairs_filter)
+        result_file_path = "./results-base/"+library+"_baseline_benchmark.pkl"
         with open(result_file_path, 'wb') as file:
             pickle.dump(results_df_list, file)
-
+        print(np.array([cal_N50(x, x['number'].sum(), 0.2) for x in results_df_list]))
+        print(np.array([weighted_average(x, 'score', 'number') for x in results_df_list]))
 
 
 
