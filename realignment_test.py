@@ -96,7 +96,7 @@ if __name__ == '__main__':
         #                                            columns=['score', 'number'])
         #         results_df_list.append(df_all_pairs_filter)
         # result_file_path = "./results-re/"+library+"_re_classic_benchmark.pkl"
-        # with open(result_file_path, 'wb') as file:
+        # with open(result_file_path, 'w') as file:
         #     pickle.dump(results_df_list, file)
 
 

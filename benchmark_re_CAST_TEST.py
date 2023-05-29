@@ -28,7 +28,15 @@ from typing import List, Tuple
 import pickle
 import os
 import argparse
-
+def cal_N50(df, node_numbers,N_ratio):
+    dfnew=df.sort_values('number',ascending=False)
+    number=0
+    for row in dfnew.values:
+        if (number >= node_numbers*N_ratio):
+            return row_old
+        else:
+            number=number+ row[1]
+            row_old = row[1]
 
 
 if __name__ == '__main__':
@@ -61,7 +69,7 @@ if __name__ == '__main__':
         new_list=[]
         for item in realignment_edgelist:
             if(item != None):
-                if item[2]>=0.8:
+                if item[2]>=0.7:
                     new_list.append(item)
         print(len(new_list))
         for item in new_list:
@@ -73,14 +81,32 @@ if __name__ == '__main__':
             cast_cluster = CAST_cluster(G_all_pairs_realignment, threshold)
             cast_score_list = []
             cast_components = [G_all_pairs_realignment.subgraph(c).copy() for c in cast_cluster]
+            re_align_set=set()
             for component in cast_components:
-                cast_score_list.append(subgraph_score_dic(component,cluster_summary_df,dic_fp))
-            cast_number = [len(x) for x in cast_cluster]
-            df_cast = pd.DataFrame(list(zip(cast_score_list, cast_number)), columns=['score', 'number'])
-            results_df_list.append(df_cast)
-        result_file_path = "./results-re-cast/"+library+"_re_cast_benchmark.pkl"
+                re_align_set = re_align_set.union(set(component.edges()))
+            original_set = set(G_all_pairs.edges())
+            common_edges =  re_align_set.intersection(original_set)
+            print(len(common_edges))
+            G_intersection = nx.Graph()
+            G_intersection.add_edges_from(common_edges)
+            score_intersection_list = []
+            components = [G_intersection.subgraph(c).copy() for c in nx.connected_components(G_intersection)]
+            for component in tqdm(components):
+                score_intersection_list.append(subgraph_score_dic(component, cluster_summary_df, dic_fp))
+            intersection_number = [len(x) for x in components]
+            df_intersection = pd.DataFrame(list(zip(score_intersection_list, intersection_number)),
+                                               columns=['score', 'number'])
+            results_df_list.append(df_intersection)
+        result_file_path = "./results-intersection/" + library + "_intersection.pkl"
         with open(result_file_path, 'wb') as file:
             pickle.dump(results_df_list, file)
+
+
+
+
+
+
+
 
 
 

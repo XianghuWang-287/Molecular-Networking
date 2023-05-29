@@ -61,7 +61,7 @@ if __name__ == '__main__':
         for node in G_all_pairs_filter_copy.nodes():
             if G_all_pairs_filter.degree[node] == 0:
                 G_all_pairs_filter.remove_node(node)
-        nx.write_graphml(G_all_pairs_filter, "./"+library+"filtered.graphml")
+        nx.write_graphml(G_all_pairs, "./"+library+".graphml")
 
 
 

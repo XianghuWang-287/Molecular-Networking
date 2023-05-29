@@ -230,6 +230,6 @@ if __name__ == '__main__':
                 continue
             re_alignment_results.append(re_alignment(node_i,node_j))
 
-    with open('re_alignment_results.pkl', 'wb') as f:
+    with open('re_alignment_results.pkl', 'w') as f:
         pickle.dump(re_alignment_results, f)
 
