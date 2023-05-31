@@ -37,7 +37,15 @@ def cal_N50(df, node_numbers,N_ratio):
         else:
             number=number+ row[1]
             row_old = row[1]
+def all_elements_duplicated(list_of_lists):
+    flattened_list = [item for sublist in list_of_lists for item in sublist]
 
+    unique_set = set(flattened_list)
+
+    if len(flattened_list) == len(unique_set):
+        return False  # Not all elements are duplicates
+    else:
+        return True  # All elements are duplicates
 
 if __name__ == '__main__':
     #pass arguments
@@ -69,27 +77,37 @@ if __name__ == '__main__':
         new_list=[]
         for item in realignment_edgelist:
             if(item != None):
-                if item[2]>=0.7:
+                if item[2]>=0.8:
                     new_list.append(item)
-        print(len(new_list))
         for item in new_list:
             if (item != None):
                 G_all_pairs_realignment.add_edge(item[0], item[1], Cosine=item[2])
         results_df_list = []
         thresholds = [x / 100 for x in range(75, 95)]
-        for threshold in tqdm(thresholds):
+        for threshold in thresholds:
             cast_cluster = CAST_cluster(G_all_pairs_realignment, threshold)
             cast_score_list = []
             cast_components = [G_all_pairs_realignment.subgraph(c).copy() for c in cast_cluster]
-            re_align_set=set()
+            print(all_elements_duplicated(cast_cluster))
+            re_align_set=set(cast_components[0].edges())
             for component in cast_components:
                 re_align_set = re_align_set.union(set(component.edges()))
             original_set = set(G_all_pairs.edges())
             common_edges =  re_align_set.intersection(original_set)
-            print(len(common_edges))
+            new_add = re_align_set - common_edges
+            print("re_align_set:{}".format(len(re_align_set)))
+            print("originial_set:{}".format(len(original_set)))
+            print("common_edges:{}".format(len(common_edges)))
             G_intersection = nx.Graph()
-            G_intersection.add_edges_from(common_edges)
-            score_intersection_list = []
+            G_intersection.add_edges_from(new_add)
+            # components_num = nx.number_connected_components(G_intersection)
+            # components = [G_intersection.subgraph(c).copy() for c in nx.connected_components(G_intersection)]
+            # plt.figure(figsize=(18, 100))
+            # for component in components:
+            #     plt.subplot(components_num // 8 + 1, 8, components.index(component) + 1)
+            #     nx.draw(component, node_size=2)
+            # plt.show()
+            score_intersection_list=[]
             components = [G_intersection.subgraph(c).copy() for c in nx.connected_components(G_intersection)]
             for component in tqdm(components):
                 score_intersection_list.append(subgraph_score_dic(component, cluster_summary_df, dic_fp))

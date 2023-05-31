@@ -171,11 +171,11 @@ def re_alignment(G):
                     Max_path=hop
             #print(Max_path_weight,Max_path)
 
-def generate_candidates(G, C):
+def generate_candidates(G, C, S):
     if (len(C)==1):
-        return [n for n in G.neighbors(C[0])]
+        return [n for n in G.neighbors(C[0]) if n in S]
     else:
-        res = set([n for n in G.neighbors(C[0])])
+        res = set([n for n in G.neighbors(C[0])if n in S])
         for item in C[1:]:
             res=res & set([n for n in G.neighbors(item)])
     return list(res)
@@ -187,7 +187,7 @@ def CAST_cluster(G, theta):
         v=S[0]
         C=[]
         C.append(v)
-        candidates=generate_candidates(G,C)
+        candidates=generate_candidates(G,C,S)
         while(len(candidates)):
             can_dic={}
             nonematch_flag=1
@@ -203,7 +203,7 @@ def CAST_cluster(G, theta):
                 break
             close_node =  max(can_dic,key=can_dic.get)
             C.append(close_node)
-            candidates=generate_candidates(G,C)
+            candidates=generate_candidates(G,C,S)
         P.append(C)
         S=[x for x in S if x not in C]
     return P
