@@ -99,7 +99,7 @@ if __name__ == '__main__':
             print("originial_set:{}".format(len(original_set)))
             print("common_edges:{}".format(len(common_edges)))
             G_intersection = nx.Graph()
-            G_intersection.add_edges_from(new_add)
+            G_intersection.add_edges_from(common_edges)
             # components_num = nx.number_connected_components(G_intersection)
             # components = [G_intersection.subgraph(c).copy() for c in nx.connected_components(G_intersection)]
             # plt.figure(figsize=(18, 100))
