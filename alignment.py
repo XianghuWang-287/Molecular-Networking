@@ -233,7 +233,7 @@ if __name__ == '__main__':
             for i, mz in enumerate(mz_array):
                 peak_range = [j for j in range(len(mz_array)) if abs(mz_array[j] - mz) <= 25]
                 sorted_range = sorted(peak_range, key=lambda j: intensity_array[j], reverse=True)
-                if i in sorted_range[:6]:
+                if i in sorted_range[:20]:
                     if abs(mz - precursor_value) > 17:
                         filtered_mz.append(mz)
                         filtered_intensities.append(intensity_array[i])

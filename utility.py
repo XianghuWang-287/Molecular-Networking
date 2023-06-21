@@ -16,6 +16,7 @@ from rdkit.Chem import AllChem
 from rdkit.Chem.Descriptors import ExactMolWt
 from rdkit.Chem.Draw import MolToFile
 from rdkit.DataStructs import FingerprintSimilarity
+from rdkit import DataStructs
 from rdkit.Chem.Fingerprints.FingerprintMols import FingerprintMol
 from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 import requests
@@ -139,16 +140,29 @@ def subgraph_score_dic(G,df, dic_fp):
     else:
         return score/edge_num
 
+# def comp_structure_dic(G, node1, node2, dic_fp):
+#     if(isinstance(node1,str)):
+#         smiles1 = G.nodes[node1]["Smiles"]
+#         smiles2 = G.nodes[node2]["Smiles"]
+#     elif (G.loc[G['scan']==node1]["Smiles"].values[0]!="N/A"):
+#         smiles1 =  G.loc[G['scan']==node1]["Smiles"].values[0]
+#         smiles2 =  G.loc[G['scan']==node2]["Smiles"].values[0]
+#     else:
+#         smiles1 =  G.loc[G['scan']==node1]["INCHI"].values[0]
+#         smiles2 =  G.loc[G['scan']==node2]["INCHI"].values[0]
+#     try:
+#         fp1=dic_fp[smiles1]
+#         fp2=dic_fp[smiles2]
+#         return FingerprintSimilarity(fp1,fp2)
+#     except Exception:
+#         return comp_structure_online(G, node1, node2)
 def comp_structure_dic(G, node1, node2, dic_fp):
     if(isinstance(node1,str)):
         smiles1 = G.nodes[node1]["Smiles"]
         smiles2 = G.nodes[node2]["Smiles"]
-    elif (G.loc[G['scan']==node1]["Smiles"].values[0]!="N/A"):
+    else:
         smiles1 =  G.loc[G['scan']==node1]["Smiles"].values[0]
         smiles2 =  G.loc[G['scan']==node2]["Smiles"].values[0]
-    else:
-        smiles1 =  G.loc[G['scan']==node1]["INCHI"].values[0]
-        smiles2 =  G.loc[G['scan']==node2]["INCHI"].values[0]
     try:
         fp1=dic_fp[smiles1]
         fp2=dic_fp[smiles2]

@@ -28,7 +28,42 @@ from typing import List, Tuple
 import pickle
 import os
 import argparse
+import random
 
+def add_edges_to_mst(original_graph, mst):
+    remaining_edges = [(u, v, original_graph[u][v]['Cosine']) for u, v in original_graph.edges() if not mst.has_edge(u, v)]
+    remaining_edges.sort(key=lambda x: x[2], reverse=True)
+
+    average_weight = calculate_average_weight(mst)
+
+    for u, v, weight in remaining_edges:
+        mst.add_edge(u, v, Cosine=weight)
+        new_average_weight = calculate_average_weight(mst)
+        if new_average_weight >= average_weight:
+            mst.remove_edge(u, v)
+            break
+        average_weight = new_average_weight
+
+    return mst
+
+def calculate_average_weight(graph):
+    total_weight = sum(graph[u][v]['Cosine'] for u, v in graph.edges())
+    average_weight = total_weight / graph.number_of_edges()
+    return average_weight
+
+def polish_subgraph(G):
+    if G.number_of_edges() == 0:
+        return G
+    maximum_spanning_tree = nx.maximum_spanning_tree(G, weight='Cosine')
+    polished_subgraph = add_edges_to_mst(G, maximum_spanning_tree)
+    return polished_subgraph
+
+def sample_graph_by_probability(graph, sample_percentage):
+    node_list=[]
+    for node in graph.nodes():
+        if random.random() <= sample_percentage:
+            node_list.append(node)
+    return graph.subgraph(node_list).copy()
 
 
 if __name__ == '__main__':
@@ -61,19 +96,23 @@ if __name__ == '__main__':
         new_list=[]
         for item in realignment_edgelist:
             if(item != None):
-                if item[2]>=0.6:
+                if item[2]>=7:
                     new_list.append(item)
         print(len(new_list))
         for item in new_list:
             if (item != None):
                 G_all_pairs_realignment.add_edge(item[0], item[1], Cosine=item[2])
+        # G_all_pairs_realignment = sample_graph_by_probability(G_all_pairs_realignment,0.5)
         results_df_list = []
         thresholds = [x / 100 for x in range(75, 95)]
         for threshold in tqdm(thresholds):
             cast_cluster = CAST_cluster(G_all_pairs_realignment, threshold)
             cast_score_list = []
             cast_components = [G_all_pairs_realignment.subgraph(c).copy() for c in cast_cluster]
+            benchmark_set = []
             for component in cast_components:
+                benchmark_set.append(polish_subgraph(component))
+            for component in benchmark_set:
                 cast_score_list.append(subgraph_score_dic(component,cluster_summary_df,dic_fp))
             cast_number = [len(x) for x in cast_cluster]
             df_cast = pd.DataFrame(list(zip(cast_score_list, cast_number)), columns=['score', 'number'])

@@ -81,7 +81,7 @@ if __name__ == '__main__':
         all_pairs_filter_number = [len(x) for x in components]
         df_all_pairs_filter = pd.DataFrame(list(zip(score_all_pairs_filter_list, all_pairs_filter_number)),columns=['score', 'number'])
         results_df_list.append(df_all_pairs_filter)
-        print(np.array([cal_N50(x, x['number'].sum(), 0.2) for x in results_df_list]))
+        print(np.array([cal_N50(x, 1093, 0.2) for x in results_df_list]))
         print(np.array([weighted_average(x, 'score', 'number') for x in results_df_list]))
 
 
