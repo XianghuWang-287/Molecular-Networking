@@ -233,17 +233,17 @@ if __name__ == '__main__':
             for i, mz in enumerate(mz_array):
                 peak_range = [j for j in range(len(mz_array)) if abs(mz_array[j] - mz) <= 25]
                 sorted_range = sorted(peak_range, key=lambda j: intensity_array[j], reverse=True)
-                if i in sorted_range[:20]:
+                if i in sorted_range[:6]:
                     if abs(mz - precursor_value) > 17:
                         filtered_mz.append(mz)
                         filtered_intensities.append(intensity_array[i])
             filtered_intensities = [math.sqrt(x) for x in filtered_intensities]
             spec_dic[int(params['scans'])] = SpectrumTuple(precursor_value, charge, filtered_mz, norm_intensity(filtered_intensities))
 
-        with Pool(processes=30, maxtasksperchild=1000) as pool:
+        with Pool(processes=28, maxtasksperchild=1009) as pool:
             # define the range of values you want to loop over
             values = [[node1, node2] for [node1, node2] in nx.non_edges(G_all_pairs)]
-            # apply the function to each value in the loop using imap_unordered
+            # apply the function to each value iqn the loop using imap_unordered
             results = list(tqdm(pool.imap(re_alignment_parallel, values), total=len(values)))
             # print the results
         result_file_path = "./alignment_results/" + library + "_realignment.pkl"
