@@ -74,7 +74,7 @@ def comp_structure_online(G, node1, node2):
         smiles2 = urllib.parse.quote(G.loc[G['scan']==node2]["Smiles"].values[0])
     compare_url = "https://gnps-structure.ucsd.edu/structuresimilarity?smiles1={}&smiles2={}".format(smiles1, smiles2)
     r = requests.get(compare_url)
-    return r.text
+    return float(r.text)
 
 def filt_single_graph(G):
     return [G.subgraph(c).copy() for c in nx.connected_components(G) if G.subgraph(c).number_of_nodes()>1]

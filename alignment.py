@@ -231,12 +231,12 @@ if __name__ == '__main__':
             filtered_intensities = []
             precursor_value = float(cluster_summary_df.loc[cluster_summary_df['scan'] == int(params['scans'])]["Precursor_MZ"].values[0])
             for i, mz in enumerate(mz_array):
-                peak_range = [j for j in range(len(mz_array)) if abs(mz_array[j] - mz) <= 25]
-                sorted_range = sorted(peak_range, key=lambda j: intensity_array[j], reverse=True)
-                if i in sorted_range[:6]:
-                    if abs(mz - precursor_value) > 17:
-                        filtered_mz.append(mz)
-                        filtered_intensities.append(intensity_array[i])
+                # peak_range = [j for j in range(len(mz_array)) if abs(mz_array[j] - mz) <= 25]
+                # sorted_range = sorted(peak_range, key=lambda j: intensity_array[j], reverse=True)
+                # if i in sorted_range[:40]:
+                if abs(mz - precursor_value) > 17:
+                    filtered_mz.append(mz)
+                    filtered_intensities.append(intensity_array[i])
             filtered_intensities = [math.sqrt(x) for x in filtered_intensities]
             spec_dic[int(params['scans'])] = SpectrumTuple(precursor_value, charge, filtered_mz, norm_intensity(filtered_intensities))
 

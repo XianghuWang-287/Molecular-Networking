@@ -26,10 +26,9 @@ from multiprocessing import Pool
 import collections
 from typing import List, Tuple
 import pickle
+import math
 import os
 import argparse
-
-
 
 if __name__ == '__main__':
     #pass arguments
@@ -54,34 +53,25 @@ if __name__ == '__main__':
         print('graph with {} nodes and {} edges'.format(G_all_pairs.number_of_nodes(), G_all_pairs.number_of_edges()))
         print("constructing dic for finger print")
         dic_fp = fingerprint_dic_construct(cluster_summary_df)
-        print("constructing the re-alignment graph")
-        G_all_pairs_realignment = G_all_pairs.copy()
-        with open(re_align_edge_file_path, 'rb') as f:
-            realignment_edgelist = pickle.load(f)
-        new_list=[]
-        for item in realignment_edgelist:
-            if(item != None):
-                if item[2]>=0.8:
-                    new_list.append(item)
-        print(len(new_list))
-        for item in new_list:
-            if (item != None):
-                G_all_pairs_realignment.add_edge(item[0], item[1], Cosine=item[2])
-        results_df_list = []
-        thresholds = [x / 100 for x in range(75, 95)]
-        for threshold in tqdm(thresholds):
-            cast_cluster = CAST_cluster(G_all_pairs_realignment, threshold)
-            cast_score_list = []
-            cast_components = [G_all_pairs_realignment.subgraph(c).copy() for c in cast_cluster]
-            for component in cast_components:
-                cast_score_list.append(subgraph_score_dic(component,cluster_summary_df,dic_fp))
-            cast_number = [len(x) for x in cast_cluster]
-            df_cast = pd.DataFrame(list(zip(cast_score_list, cast_number)), columns=['score', 'number'])
-            results_df_list.append(df_cast)
-        result_file_path = "./results-re-cast/"+library+"_re_cast_benchmark.pkl"
-        with open(result_file_path, 'wb') as file:
-            pickle.dump(results_df_list, file)
+        G_all_pairs_structure = nx.Graph()
+        for i in tqdm(range(1,G_all_pairs.number_of_nodes()+1)):
+            G_all_pairs_structure.add_node(i)
+            for j in range(i+1, G_all_pairs.number_of_nodes()+1):
+                similarity = comp_structure_dic(cluster_summary_df,i,j,dic_fp)
+                if isinstance(similarity, (int, float, complex)):
+                    if similarity> 0.7:
+                        G_all_pairs_structure.add_edge(i,j)
+                        G_all_pairs_structure[i][j]['stru_similarity'] = similarity
+        similarities = []
+        for u, v, data in G_all_pairs_structure.edges(data=True):
+            similarity = data['stru_similarity']
+            similarities.append(similarity)
 
+        # Calculate the mean of the extracted similarities
+        mean_similarity = sum(similarities) / len(similarities)
+
+        print("Mean Similarity:", mean_similarity)
+        print('structure graph with {} nodes and {} edges'.format(G_all_pairs_structure.number_of_nodes(), G_all_pairs_structure.number_of_edges()))
 
 
 
