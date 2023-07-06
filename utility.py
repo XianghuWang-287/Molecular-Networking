@@ -101,6 +101,29 @@ def fingerprint_dic_construct(G):
             continue
     return dic
 
+def fingerprint_dic_construct_InCHI(G):
+    dic={}
+    for index in tqdm(range(len(G))):
+        try:
+            if (G.iloc[index]['Smiles'] == " " or pd.isna(G.iloc[index]['Smiles'])):
+                print("None smiles data, try InCHI")
+                scan = G.iloc[index]['scan']
+                inchi = G.iloc[index]['INCHI'].replace('"',"")
+                mol = Chem.MolFromInchi(inchi)
+                fp = FingerprintMol(mol)
+                dic[scan] = fp
+            else:
+                smiles=G.iloc[index]['Smiles']
+                scan = G.iloc[index]['scan']
+                #print(smiles)
+                mol = Chem.MolFromSmiles(smiles.replace('\\\\','\\'))
+                fp=FingerprintMol(mol)
+                dic[scan]=fp
+        except Exception:
+            #print(index+1)
+            continue
+    return dic
+
 def fingerprint_dic_construct_networkx(G):
     dic={}
     for node in tqdm(G.nodes()):
@@ -157,15 +180,9 @@ def subgraph_score_dic(G,df, dic_fp):
 #     except Exception:
 #         return comp_structure_online(G, node1, node2)
 def comp_structure_dic(G, node1, node2, dic_fp):
-    if(isinstance(node1,str)):
-        smiles1 = G.nodes[node1]["Smiles"]
-        smiles2 = G.nodes[node2]["Smiles"]
-    else:
-        smiles1 =  G.loc[G['scan']==node1]["Smiles"].values[0]
-        smiles2 =  G.loc[G['scan']==node2]["Smiles"].values[0]
     try:
-        fp1=dic_fp[smiles1]
-        fp2=dic_fp[smiles2]
+        fp1=dic_fp[int(node1)]
+        fp2=dic_fp[int(node2)]
         return FingerprintSimilarity(fp1,fp2)
     except Exception:
         return comp_structure_online(G, node1, node2)

@@ -52,7 +52,7 @@ if __name__ == '__main__':
         G_all_pairs = nx.from_pandas_edgelist(all_pairs_df, "CLUSTERID1", "CLUSTERID2", "Cosine")
         print('graph with {} nodes and {} edges'.format(G_all_pairs.number_of_nodes(), G_all_pairs.number_of_edges()))
         print("constructing dic for finger print")
-        dic_fp = fingerprint_dic_construct(cluster_summary_df)
+        dic_fp = fingerprint_dic_construct_InCHI(cluster_summary_df)
         x_max_number = [x for x in range(1, 40, 2)]
         y_max_number = [y for y in range(2, 402, 20)]
         y_weight_avg = []

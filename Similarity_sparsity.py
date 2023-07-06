@@ -52,16 +52,23 @@ if __name__ == '__main__':
         G_all_pairs = nx.from_pandas_edgelist(all_pairs_df, "CLUSTERID1", "CLUSTERID2", "Cosine")
         print('graph with {} nodes and {} edges'.format(G_all_pairs.number_of_nodes(), G_all_pairs.number_of_edges()))
         print("constructing dic for finger print")
-        dic_fp = fingerprint_dic_construct(cluster_summary_df)
+        dic_fp = fingerprint_dic_construct_InCHI(cluster_summary_df)
         G_all_pairs_structure = nx.Graph()
+        error_num = 0
         for i in tqdm(range(1,G_all_pairs.number_of_nodes()+1)):
             G_all_pairs_structure.add_node(i)
             for j in range(i+1, G_all_pairs.number_of_nodes()+1):
-                similarity = comp_structure_dic(cluster_summary_df,i,j,dic_fp)
-                if isinstance(similarity, (int, float, complex)):
-                    if similarity> 0.7:
-                        G_all_pairs_structure.add_edge(i,j)
-                        G_all_pairs_structure[i][j]['stru_similarity'] = similarity
+                try:
+                    similarity = comp_structure_dic(cluster_summary_df,i,j,dic_fp)
+                    if isinstance(similarity, (int, float, complex)):
+                        if similarity> 0.7:
+                            G_all_pairs_structure.add_edge(i,j)
+                            G_all_pairs_structure[i][j]['stru_similarity'] = similarity
+                except Exception as e:
+                    error_num =  error_num + 1
+                    print("Warning:", e)
+
+
         similarities = []
         for u, v, data in G_all_pairs_structure.edges(data=True):
             similarity = data['stru_similarity']
@@ -69,7 +76,7 @@ if __name__ == '__main__':
 
         # Calculate the mean of the extracted similarities
         mean_similarity = sum(similarities) / len(similarities)
-
+        print("Error number:",error_num)
         print("Mean Similarity:", mean_similarity)
         print('structure graph with {} nodes and {} edges'.format(G_all_pairs_structure.number_of_nodes(), G_all_pairs_structure.number_of_edges()))
 

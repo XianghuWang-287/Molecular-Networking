@@ -88,7 +88,7 @@ if __name__ == '__main__':
         G_all_pairs = nx.from_pandas_edgelist(all_pairs_df, "CLUSTERID1", "CLUSTERID2", "Cosine")
         print('graph with {} nodes and {} edges'.format(G_all_pairs.number_of_nodes(), G_all_pairs.number_of_edges()))
         print("constructing dic for finger print")
-        dic_fp = fingerprint_dic_construct(cluster_summary_df)
+        dic_fp = fingerprint_dic_construct_InCHI(cluster_summary_df)
         print("constructing the re-alignment graph")
         G_all_pairs_realignment = G_all_pairs.copy()
         with open(re_align_edge_file_path, 'rb') as f:
@@ -102,9 +102,9 @@ if __name__ == '__main__':
         for item in new_list:
             if (item != None):
                 G_all_pairs_realignment.add_edge(item[0], item[1], Cosine=item[2])
-        # G_all_pairs_realignment = sample_graph_by_probability(G_all_pairs_realignment,0.5)
+        G_all_pairs_realignment = sample_graph_by_probability(G_all_pairs_realignment,0.5)
         results_df_list = []
-        thresholds = [x / 100 for x in range(75, 95)]
+        thresholds = [x / 100 for x in range(70, 95)]
         for threshold in tqdm(thresholds):
             cast_cluster = CAST_cluster(G_all_pairs_realignment, threshold)
             cast_score_list = []
@@ -117,7 +117,7 @@ if __name__ == '__main__':
             cast_number = [len(x) for x in cast_cluster]
             df_cast = pd.DataFrame(list(zip(cast_score_list, cast_number)), columns=['score', 'number'])
             results_df_list.append(df_cast)
-        result_file_path = "./results-re-cast/" + library + "_re_cast_benchmark.pkl"
+        result_file_path = "./results-re-cast/" + library +"_70_9" + "_re_cast_benchmark.pkl"
         with open(result_file_path, 'wb') as file:
             pickle.dump(results_df_list, file)
 
