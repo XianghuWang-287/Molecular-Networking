@@ -104,13 +104,13 @@ if __name__ == '__main__':
             if (item != None):
                 G_all_pairs_realignment.add_edge(item[0], item[1], Cosine=item[2])
         for round in range(rounds):
-            G_all_pairs_realignment = sample_graph_by_probability(G_all_pairs_realignment,sample_rate)
+            G_all_pairs_realignment_sample = sample_graph_by_probability(G_all_pairs_realignment,sample_rate)
             results_df_list = []
             thresholds = [x / 100 for x in range(70, 95)]
             for threshold in tqdm(thresholds):
-                cast_cluster = CAST_cluster(G_all_pairs_realignment, threshold)
+                cast_cluster = CAST_cluster(G_all_pairs_realignment_sample, threshold)
                 cast_score_list = []
-                cast_components = [G_all_pairs_realignment.subgraph(c).copy() for c in cast_cluster]
+                cast_components = [G_all_pairs_realignment_sample.subgraph(c).copy() for c in cast_cluster]
                 benchmark_set = []
                 for component in cast_components:
                     benchmark_set.append(polish_subgraph(component))
