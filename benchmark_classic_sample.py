@@ -29,7 +29,6 @@ import pickle
 import os
 import argparse
 import random
-sample_rate = 0.9
 rounds = 10
 def sample_graph_by_probability(graph, sample_percentage):
     node_list=[]
@@ -43,8 +42,11 @@ if __name__ == '__main__':
     #pass arguments
     parser = argparse.ArgumentParser(description='Using realignment method to reconstruct the network')
     parser.add_argument('--input', type=str,required=True,default="input_library.txt", help='input libraries')
+    parser.add_argument('--sr', type=float, required=True, default=0.5, help= 'Sample rate')
     args = parser.parse_args()
     input_lib_file = args.input
+    sample_rate = args.sr
+    print("Sample rate:",sample_rate)
 
     #read libraries from input file
     with open(input_lib_file,'r') as f:
@@ -60,14 +62,17 @@ if __name__ == '__main__':
         G_all_pairs = nx.from_pandas_edgelist(all_pairs_df, "CLUSTERID1", "CLUSTERID2", "Cosine")
         print('graph with {} nodes and {} edges'.format(G_all_pairs.number_of_nodes(), G_all_pairs.number_of_edges()))
         print("constructing dic for finger print")
-        dic_fp = fingerprint_dic_construct(cluster_summary_df)
+        dic_fp = fingerprint_dic_construct_InCHI(cluster_summary_df)
         x_max_number = [x for x in range(1, 40, 2)]
         y_max_number = [y for y in range(2, 402, 20)]
         y_weight_avg = []
         components_all_list = []
         results_df_list = []
         for round in range(rounds):
+            results_df_list=[]
             G_all_pairs_sample = sample_graph_by_probability(G_all_pairs,sample_rate)
+            graph_file_name = "./results/"+library+'/'+library+"_"+str(sample_rate*100)+"_" + str(round)+"_classic_benchmark.graphml"
+            nx.write_graphml(G_all_pairs_sample,graph_file_name)
             for max_k in tqdm(range(1, 40, 2)):
                 for max_c in range(2, 102, 5):
                     G_all_pairs_filter = G_all_pairs_sample.copy()
@@ -85,7 +90,7 @@ if __name__ == '__main__':
                     all_pairs_filter_number = [len(x) for x in components]
                     df_all_pairs_filter = pd.DataFrame(list(zip(score_all_pairs_filter_list, all_pairs_filter_number)),columns=['score', 'number'])
                     results_df_list.append(df_all_pairs_filter)
-            result_file_path = "./results/"+library+"_"+str(sample_rate*100)+"_" + str(round)+"_classic_benchmark.pkl"
+            result_file_path = "./results/"+library+'/'+library+"_"+str(sample_rate*100)+"_" + str(round)+"_classic_benchmark.pkl"
             with open(result_file_path, 'wb') as file:
                 pickle.dump(results_df_list, file)
 
