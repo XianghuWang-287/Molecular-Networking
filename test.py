@@ -28,32 +28,35 @@ from multiprocessing import Pool
 import collections
 from typing import List, Tuple
 
+from rdkit import Chem, DataStructs
+from rdkit.Chem import RDKFingerprint
+
+# Load molecules
+mol1 = Chem.MolFromSmiles('CCO')  # Replace with your SMILES strings or molecule files
+mol2 = Chem.MolFromSmiles('CCC')
+
+# Generate RDKFingerprints
+# fp1 = RDKFingerprint(mol1)
+# fp2 = RDKFingerprint(mol2)
+fp1 = AllChem.GetMorganFingerprintAsBitVect(mol1, 2, nBits=1024)
+fp2 = AllChem.GetMorganFingerprintAsBitVect(mol2, 2, nBits=1024)
+
+# Calculate different similarity metrics
+tanimoto = DataStructs.TanimotoSimilarity(fp1, fp2)
+dice = DataStructs.DiceSimilarity(fp1, fp2)
+cosine = DataStructs.CosineSimilarity(fp1, fp2)
+sokal = DataStructs.SokalSimilarity(fp1, fp2)
+russel = DataStructs.RusselSimilarity(fp1, fp2)
+kulczynski = DataStructs.KulczynskiSimilarity(fp1, fp2)
+mcconnaughey = DataStructs.McConnaugheySimilarity(fp1, fp2)
 
 
-classic_networking_task = "9b79d3dd2322454da4b475fbb1081fbb"
-# This is the Network Created by Classic Molecular Networking with the Default Layout, this includes all the structure infomration
-classic_network_G = workflow_classicnetworking.get_graphml_network(classic_networking_task)
-classic_network_G = nx.read_graphml("temp.graphml")
+# Print similarity values
+print("Tanimoto Similarity:", tanimoto)
+print("Dice Similarity:", dice)
+print("Cosine Similarity:", cosine)
+print("Sokal Similarity:", sokal)
+print("Russel Similarity:", russel)
+print("Kulczynski Similarity:", kulczynski)
+print("McConnaughey Similarity:", mcconnaughey)
 
-# Getting defautl classic networking data from scratch
-# cluster_summary_df = taskresult.get_task_resultview_dataframe(classic_networking_task, "view_all_clusters_withID_beta")
-cluster_summary_df = pd.read_csv("summary.tsv")
-
-# classic_df_DB = taskresult.get_task_resultview_dataframe(classic_networking_task, "view_all_annotations_DB")
-
-# Downloading all pairs from BareBones Networking, which calculates all pairs but does not do topology filtering
-# all_pairs_task = "0b2207d0925c4568adabfcb063e8ca46"
-# all_pairs_df = taskresult.get_task_resultview_dataframe(all_pairs_task, "view_results")
-all_pairs_df = pd.read_csv("merged_pairs.tsv",sep='\t')
-G_all_pairs =  nx.from_pandas_edgelist(all_pairs_df, "CLUSTERID1", "CLUSTERID2", "Cosine") #Generate network from all pairs data frame
-G_all_pairs_realignment=nx.read_graphml("G_all_pairs_realignment.graphml")
-dic_fp=fingerprint_dic_construct(cluster_summary_df)
-# dic_fp_classic=fingerprint_dic_construct_networkx(classic_network_G)
-components=filt_single_graph(G_all_pairs)
-score_all_pair_original=[]
-for component in tqdm(components):
-    score_all_pair_original.append(subgraph_score_dic(component,classic_network_G,cluster_summary_df,dic_fp))
-all_pairs_original_number = [len(x) for x in components]
-df_all_pairs_original=pd.DataFrame(list(zip(score_all_pair_original,all_pairs_original_number)), columns=['score','number'])
-print(weighted_average(df_all_pairs_original, 'score', 'number'))
-# re_alignment(G_all_pairs)

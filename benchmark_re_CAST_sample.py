@@ -29,7 +29,6 @@ import pickle
 import os
 import argparse
 import random
-sample_rate = 0.9
 rounds = 10 #how many rounds for a single sample rate
 def add_edges_to_mst(original_graph, mst):
     remaining_edges = [(u, v, original_graph[u][v]['Cosine']) for u, v in original_graph.edges() if not mst.has_edge(u, v)]
@@ -71,7 +70,9 @@ if __name__ == '__main__':
     #pass arguments
     parser = argparse.ArgumentParser(description='Using realignment method to reconstruct the network')
     parser.add_argument('--input', type=str,required=True,default="input_library.txt", help='input libraries')
+    parser.add_argument('--sr', type=float, required=True, default=0.5, help='Sample rate')
     args = parser.parse_args()
+    sample_rate = args.sr
     input_lib_file = args.input
 
     #read libraries from input file
@@ -106,6 +107,8 @@ if __name__ == '__main__':
         for round in range(rounds):
             G_all_pairs_realignment_sample = sample_graph_by_probability(G_all_pairs_realignment,sample_rate)
             results_df_list = []
+            graph_file_name = "./results-re-cast/" + library + '/' + library + "_" + str(sample_rate * 100) + "_" + str(round) + "_classic_benchmark.graphml"
+            nx.write_graphml(G_all_pairs_realignment_sample, graph_file_name)
             thresholds = [x / 100 for x in range(70, 95)]
             for threshold in tqdm(thresholds):
                 cast_cluster = CAST_cluster(G_all_pairs_realignment_sample, threshold)
@@ -119,7 +122,7 @@ if __name__ == '__main__':
                 cast_number = [len(x) for x in cast_cluster]
                 df_cast = pd.DataFrame(list(zip(cast_score_list, cast_number)), columns=['score', 'number'])
                 results_df_list.append(df_cast)
-            result_file_path = "./results-re-cast/" + library +"_"+str(sample_rate*100)+"_" + str(round)+ "_re_cast_benchmark.pkl"
+            result_file_path = "./results-re-cast/"+library+'/' + library +"_"+str(sample_rate*100)+"_" + str(round)+ "_re_cast_benchmark.pkl"
             with open(result_file_path, 'wb') as file:
                 pickle.dump(results_df_list, file)
 
