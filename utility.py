@@ -185,8 +185,8 @@ def comp_structure_dic(G, node1, node2, dic_fp):
         fp2=dic_fp[int(node2)]
         return FingerprintSimilarity(fp1,fp2)
     except Exception:
-        print("error nodes:",node1,node2)
-        print("Using online comparison")
+        # print("error nodes:",node1,node2)
+        # print("Using online comparison")
         return comp_structure_online(G, node1, node2)
 
 def re_alignment(G):

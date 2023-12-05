@@ -46,9 +46,10 @@ if __name__ == '__main__':
         library = library.strip('\n')
         print("starting benchmarking library:"+library)
         summary_file_path = "./data/summary/"+library+"_summary.tsv"
-        merged_pairs_file_path = "./data/merged_paris/"+library+"_merged_pairs.tsv"
+        merged_pairs_file_path = "./data/merged_pairs_ms2deepscore/"+library+"_merged_pairs.tsv"
         cluster_summary_df = pd.read_csv(summary_file_path)
         all_pairs_df = pd.read_csv(merged_pairs_file_path, sep='\t')
+        # all_pairs_df = all_pairs_df.apply(pd.to_numeric, errors='coerce')
         G_all_pairs = nx.from_pandas_edgelist(all_pairs_df, "CLUSTERID1", "CLUSTERID2", "Cosine")
         print('graph with {} nodes and {} edges'.format(G_all_pairs.number_of_nodes(), G_all_pairs.number_of_edges()))
         print("constructing dic for finger print")
@@ -75,7 +76,7 @@ if __name__ == '__main__':
                 all_pairs_filter_number = [len(x) for x in components]
                 df_all_pairs_filter = pd.DataFrame(list(zip(score_all_pairs_filter_list, all_pairs_filter_number)),columns=['score', 'number'])
                 results_df_list.append(df_all_pairs_filter)
-        result_file_path = "./results/"+library+"_classic_benchmark.pkl"
+        result_file_path = "./results_classic_ms2deepscore/"+library+"_classic_benchmark.pkl"
         with open(result_file_path, 'wb') as file:
             pickle.dump(results_df_list, file)
 
