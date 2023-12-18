@@ -213,7 +213,7 @@ if __name__ == '__main__':
         library = library.strip('\n')
         print("starting align library:"+library)
         summary_file_path = "./data/summary/"+library+"_summary.tsv"
-        merged_pairs_file_path = "./data/merged_paris/"+library+"_merged_pairs.tsv"
+        merged_pairs_file_path = "./data/raw_ms2deepscore/"+library+"_0.995.tsv"
         mgf_file_path = "./data/converted/"+library+"_converted.mgf"
         cluster_summary_df = pd.read_csv(summary_file_path)
         all_pairs_df = pd.read_csv(merged_pairs_file_path, sep='\t')
@@ -246,7 +246,7 @@ if __name__ == '__main__':
             # apply the function to each value in the loop using imap_unordered
             results = list(tqdm(pool.imap(re_alignment_parallel, values), total=len(values)))
             # print the results
-        result_file_path = "./alignment_results/" + library + "_realignment.pkl"
+        result_file_path = "./alignment_ms2deepscore_results/" + library + "_realignment.pkl"
         with open(result_file_path, 'wb') as f:
             pickle.dump(results, f)
     print("Finish align all libraries")

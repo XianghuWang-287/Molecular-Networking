@@ -95,7 +95,7 @@ def fingerprint_dic_construct(G):
             #print(smiles)
             mol = Chem.MolFromSmiles(smiles.replace('\\\\','\\'))
             fp=FingerprintMol(mol)
-            dic[smiles]=fp
+            dic[index+1]=fp
         except Exception:
             #print(index+1)
             continue

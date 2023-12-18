@@ -50,7 +50,7 @@ def calculate_correct_classification_percentage(components, node_types_df, thres
     for component in components:
         cluster_nodes = list(component.nodes())
         node_index = [node - 1 for node in cluster_nodes]
-        cluster_types = node_types_df.loc[node_index, 'superclass_results']
+        cluster_types = node_types_df.loc[node_index, 'Class']
         cluster_types = cluster_types.replace({np.nan: "Unknown"})
         dominant_type = cluster_types.value_counts().idxmax()
         if dominant_type == "Unknown":
@@ -71,8 +71,8 @@ def edge_correct_classification_percentage(components,node_types_df):
         for edge in component.edges():
             node1 = edge[0]
             node2 = edge[1]
-            node1_type = node_types_df.iloc[node1-1]['superclass_results']
-            node2_type = node_types_df.iloc[node2-1]['superclass_results']
+            node1_type = node_types_df.iloc[node1-1]['Kingdom']
+            node2_type = node_types_df.iloc[node2-1]['Kingdom']
             if pd.isna(node1_type) or pd.isna(node2_type):
                 continue
             if node1_type == node2_type:
@@ -98,23 +98,22 @@ if __name__ == '__main__':
         print("starting benchmarking library:" + library)
         summary_file_path = "./data/summary/" + library + "_summary.tsv"
         merged_pairs_file_path = "./data/merged_paris/" + library + "_merged_pairs.tsv"
-        classifer_file_path = "./data/"+library+"_NP.tsv"
+        classifer_file_path = "./"+library+"_classifier_results.csv"
 
         cluster_summary_df = pd.read_csv(summary_file_path)
         all_pairs_df = pd.read_csv(merged_pairs_file_path, sep='\t')
-        classifer_df = pd.read_csv(classifer_file_path, sep='\t')
+        classifer_df = pd.read_csv(classifer_file_path)
 
         G_all_pairs = nx.from_pandas_edgelist(all_pairs_df, "CLUSTERID1", "CLUSTERID2", "Cosine")
         print('graph with {} nodes and {} edges'.format(G_all_pairs.number_of_nodes(), G_all_pairs.number_of_edges()))
-        print("constructing dic for finger print")
-        dic_fp = fingerprint_dic_construct(cluster_summary_df)
         y_weight_avg = []
         components_all_list = []
         results_df_list = []
         for max_k in tqdm(range(1, 40, 2)):
+
             G_all_pairs_filter = G_all_pairs.copy()
             filter_top_k(G_all_pairs_filter, max_k)
-            filter_component(G_all_pairs_filter, 100)
+            filter_component(G_all_pairs_filter, 500)
             G_all_pairs_filter_copy = G_all_pairs_filter.copy()
             for node in G_all_pairs_filter_copy.nodes():
                 if G_all_pairs_filter.degree[node] == 0:
@@ -124,5 +123,6 @@ if __name__ == '__main__':
             # percentage_correctly_classified = calculate_correct_classification_percentage(components,classifer_df,0.7)
             # print(f"Percentage of correctly classified clusters: {percentage_correctly_classified:.2f}%")
             percentage_correct_edges = edge_correct_classification_percentage(components, classifer_df)
+            print(percentage_correct_edges)
             results_df_list.append(percentage_correct_edges)
         print(results_df_list)

@@ -102,7 +102,7 @@ if __name__ == '__main__':
         for item in new_list:
             if (item != None):
                 G_all_pairs_realignment.add_edge(item[0], item[1], Cosine=item[2])
-        G_all_pairs_realignment = sample_graph_by_probability(G_all_pairs_realignment,0.9)
+        G_all_pairs_realignment = sample_graph_by_probability(G_all_pairs_realignment,0.5)
         results_df_list = []
         thresholds = [x / 100 for x in range(70, 95)]
         for threshold in tqdm(thresholds):
@@ -117,7 +117,7 @@ if __name__ == '__main__':
             cast_number = [len(x) for x in cast_cluster]
             df_cast = pd.DataFrame(list(zip(cast_score_list, cast_number)), columns=['score', 'number'])
             results_df_list.append(df_cast)
-        result_file_path = "./results-re-cast/" + library +"_90_9" + "_re_cast_benchmark.pkl"
+        result_file_path = "./results-re-cast/" + library +"_50" + "_re_cast_benchmark.pkl"
         with open(result_file_path, 'wb') as file:
             pickle.dump(results_df_list, file)
 
