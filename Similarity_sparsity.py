@@ -29,6 +29,21 @@ import pickle
 import math
 import os
 import argparse
+from itertools import combinations
+
+def cal_N50(df, node_numbers,N_ratio):
+    dfnew=df.sort_values('number',ascending=False)
+    number=dfnew.values[0][1]
+    row_old = dfnew.values[0][1]
+    if len(dfnew.values) ==1:
+        return row_old
+    for row in dfnew.values[1:]:
+        if (number >= node_numbers*N_ratio):
+            return row_old
+        else:
+            number=number+ row[1]
+            row_old = row[1]
+    return 1
 
 if __name__ == '__main__':
     #pass arguments
@@ -55,30 +70,31 @@ if __name__ == '__main__':
         dic_fp = fingerprint_dic_construct_InCHI(cluster_summary_df)
         G_all_pairs_structure = nx.Graph()
         error_num = 0
-        for i in tqdm(range(1,G_all_pairs.number_of_nodes()+1)):
-            G_all_pairs_structure.add_node(i)
-            for j in range(i+1, G_all_pairs.number_of_nodes()+1):
-                try:
-                    similarity = comp_structure_dic(cluster_summary_df,i,j,dic_fp)
-                    if isinstance(similarity, (int, float, complex)):
-                        if similarity> 0.7:
-                            G_all_pairs_structure.add_edge(i,j)
-                            G_all_pairs_structure[i][j]['stru_similarity'] = similarity
-                except Exception as e:
-                    error_num =  error_num + 1
-                    print("Warning:", e)
+        for node in G_all_pairs.nodes():
+            G_all_pairs_structure.add_node(node)
+        for pair in tqdm(list(combinations(G_all_pairs_structure.nodes, 2))):
+            try:
+                similarity = comp_structure_dic(cluster_summary_df,pair[0],pair[1],dic_fp)
+                if isinstance(similarity, (int, float, complex)):
+                    if similarity>= 0.95:
+                        G_all_pairs_structure.add_edge(pair[0],pair[1])
+                        G_all_pairs_structure[pair[0]][pair[1]]['Cosine'] = similarity
+            except Exception as e:
+                print("Warning:", e)
+        results_df_list=[]
+        score_all_pairs_filter_list=[]
+        components = [G_all_pairs_structure.subgraph(c).copy() for c in nx.connected_components(G_all_pairs_structure)]
+        for component in tqdm(components):
+            score_all_pairs_filter_list.append(subgraph_score_dic(component,cluster_summary_df,dic_fp))
+        all_pairs_filter_number = [len(x) for x in components]
+        df_all_pairs_filter = pd.DataFrame(list(zip(score_all_pairs_filter_list, all_pairs_filter_number)),columns=['score', 'number'])
+        results_df_list.append(df_all_pairs_filter)
+        # result_file_path = "./results-base/"+library+"_baseline_benchmark.pkl"
+        # with open(result_file_path, 'wb') as file:
+        #     pickle.dump(results_df_list, file)
 
-
-        similarities = []
-        for u, v, data in G_all_pairs_structure.edges(data=True):
-            similarity = data['stru_similarity']
-            similarities.append(similarity)
-
-        # Calculate the mean of the extracted similarities
-        mean_similarity = sum(similarities) / len(similarities)
-        print("Error number:",error_num)
-        print("Mean Similarity:", mean_similarity)
-        print('structure graph with {} nodes and {} edges'.format(G_all_pairs_structure.number_of_nodes(), G_all_pairs_structure.number_of_edges()))
+        print(np.array([cal_N50(x, 1460, 0.2) for x in results_df_list]))
+        print(np.array([weighted_average(x, 'score', 'number') for x in results_df_list]))
 
 
 

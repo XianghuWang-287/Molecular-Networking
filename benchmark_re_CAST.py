@@ -96,8 +96,9 @@ if __name__ == '__main__':
         new_list=[]
         for item in realignment_edgelist:
             if(item != None):
-                if item[2]>=0.65:
+                if item[2]>=0.85:
                     new_list.append(item)
+                    print(item)
         print(len(new_list))
         for item in new_list:
             if (item != None):

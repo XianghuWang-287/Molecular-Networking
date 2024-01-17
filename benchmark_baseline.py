@@ -82,8 +82,7 @@ if __name__ == '__main__':
     summary_file_path = "./data/summary/GNPS-NIH-SMALLMOLECULEPHARMACOLOGICALLYACTIVE_summary.tsv"
     # merged_pairs_file_path = "./data/merged_paris/"+library+"_merged_pairs.tsv"
     cluster_summary_df = pd.read_csv(summary_file_path)
-    threshold_list = [0.5, 0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 0.991, 0.992,
-                      0.993, 0.994, 0.995, 0.996, 0.997, 0.998, 0.999]
+    threshold_list = [0.5,0.6,0.7,0.8,0.9,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.991,0.992,0.993,0.994,0.995]
     N20_list=[]
     score_list=[]
     for threshold in threshold_list:
