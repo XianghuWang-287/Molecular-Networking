@@ -57,15 +57,18 @@ if __name__ == '__main__':
         print(smiles_list)
         data_list = []
         for smiles in tqdm(smiles_list):
-            smiles_string=urllib.parse.quote(smiles)
-            api_url = f"https://structure.gnps2.org/classyfire?smiles={smiles_string}"
-            response = requests.get(api_url)
+            try:
+                smiles_string=urllib.parse.quote(smiles.encode("utf-8"))
+                api_url = f"https://structure.gnps2.org/classyfire?smiles={smiles_string}"
+                response = requests.get(api_url)
 
-            if response.status_code == 200:
-                data = response.json()
-                data_list.append(data)
-            else:
-                print(f"API request for SMILES {smiles} failed with status code:", response.status_code)
+                if response.status_code == 200:
+                    data = response.json()
+                    data_list.append(data)
+                else:
+                    print(f"API request for SMILES {smiles} failed with status code:", response.status_code)
+            except Exception as e:
+                print(e)
 
         # Process the collected data and create a DataFrame
         df_list = []
