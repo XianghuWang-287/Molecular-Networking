@@ -29,6 +29,14 @@ import pickle
 import os
 import argparse
 
+library_dic = {
+"GNPS-NIH-SMALLMOLECULEPHARMACOLOGICALLYACTIVE":"NIH SPEC",
+"GNPS-SELLECKCHEM-FDA-PART2":"FDA Pt2",
+"GNPS-NIH-NATURALPRODUCTSLIBRARY":"NIH NP",
+"GNPS-NIH-NATURALPRODUCTSLIBRARY_ROUND2_POSITIVE":"NIH NP Rd2 Positive",
+"GNPS-EMBL-MCF":"EMBL MCF",
+"PSU-MSMLS":"PSU-MSMLS"
+               }
 def cal_N50(df, node_numbers,N_ratio):
     dfnew=df.sort_values('number',ascending=False)
     number=dfnew.values[0][1]
@@ -53,7 +61,7 @@ if __name__ == '__main__':
     #read libraries from input file
     with open(input_lib_file,'r') as f:
         libraries = f.readlines()
-
+    plt.figure(figsize=(12, 8))
     for library in libraries:
         library = library.strip('\n')
         print("starting benchmarking library:"+library)
@@ -69,10 +77,10 @@ if __name__ == '__main__':
         y_weight_avg = []
         components_all_list = []
         results_df_list = []
-        max_k=20
+        max_c=100
         N20_list=[]
         score_list=[]
-        for max_c in tqdm(range(2, 102, 5)):
+        for max_k in tqdm(range(2, 50, 1)):
             G_all_pairs_filter = G_all_pairs.copy()
             filter_top_k(G_all_pairs_filter, max_k)
             filter_component(G_all_pairs_filter, max_c)
@@ -91,8 +99,19 @@ if __name__ == '__main__':
         # result_file_path = "./results_classic_ms2deepscore/"+library+"_classic_benchmark.pkl"
         # with open(result_file_path, 'wb') as file:
         #     pickle.dump(results_df_list, file)
-        print(np.array([cal_N50(x, 1201, 0.25) for x in results_df_list]))
-        print(np.array([weighted_average(x, 'score', 'number') for x in results_df_list]))
+        print([cal_N50(x, G_all_pairs.number_of_nodes(), 0.25) for x in results_df_list])
+        print([weighted_average(x, 'score', 'number') for x in results_df_list])
+        Network_score_list = [weighted_average(x, 'score', 'number') for x in results_df_list]
+        x_k = list(range(2, 50, 1))
+        y_k = Network_score_list
+        plt.plot(x_k,y_k,'o-',label=library_dic[library])
+    plt.xlabel('Top K', fontsize=20)
+    plt.ylabel('Network Accuracy Score', fontsize=20)
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
+    plt.legend(fontsize=18)
+    plt.title('Top K Evaluation', fontsize=20)
+    plt.show()
 
 
 

@@ -77,15 +77,20 @@ def calculate_correct_classification_percentage(components, node_types_df, thres
     for component in components:
         cluster_nodes = list(component.nodes())
         node_index = [node - 1 for node in cluster_nodes]
-        cluster_types = node_types_df.loc[node_index, 'Superclass']
-        cluster_types = cluster_types.replace({np.nan: "Unknown"})
-        dominant_type = cluster_types.value_counts().idxmax()
-        if dominant_type == "Unknown":
-            continue
-        percentage = cluster_types.value_counts()[dominant_type] / len(cluster_nodes)
+        try:
+            cluster_types = node_types_df.loc[node_index, 'Superclass']
+            cluster_types = cluster_types.replace({np.nan: "Unknown"})
+            dominant_type = cluster_types.value_counts().idxmax()
+            if dominant_type == "Unknown":
+                continue
+            percentage = cluster_types.value_counts()[dominant_type] / len(cluster_nodes)
 
-        if percentage >= threshold:
-            correctly_classified_clusters += 1
+            if percentage >= threshold:
+                correctly_classified_clusters += 1
+        except Exception as e:
+            continue
+            #print(e)
+            #print(node_index)
 
     return correctly_classified_clusters / total_clusters
 
@@ -178,10 +183,11 @@ if __name__ == '__main__':
             benchmark_set = []
             for component in cast_components:
                 benchmark_set.append(polish_subgraph(component))
-            correct_classification_percentage =  calculate_correct_classification_percentage(benchmark_set,classifer_df)
+            correct_classification_percentage =  calculate_correct_classification_percentage(cast_components,classifer_df)
             purity_score_list.append(correct_classification_percentage)
             cast_number = [len(x) for x in cast_cluster]
-            N50_list.append(CalN50(cast_number,1201,0.2))
+            print(G_all_pairs.number_of_nodes())
+            N50_list.append(CalN50(cast_number,G_all_pairs.number_of_nodes(),0.2))
         # result_file_path = "./results-re-cast-ClassyFire/" + library + "_re_cast_ClassyFire_benchmark.pkl"
         # with open(result_file_path, 'wb') as file:
         #     pickle.dump(results_df_list, file)
