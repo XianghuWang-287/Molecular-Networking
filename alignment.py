@@ -27,6 +27,7 @@ import collections
 from typing import List, Tuple
 import pickle
 import math
+import time
 import os
 import argparse
 
@@ -178,6 +179,7 @@ def realign_path(path):
 def re_alignment_parallel(args):
     node1,node2=args
     if nx.has_path(G_all_pairs, node1, node2):
+        key_path_start_time = time.time()
         all_shortest_hops = [p for p in nx.all_shortest_paths(G_all_pairs, node1, node2, weight=None, method='dijkstra')]
         Max_path_weight = 0
         Max_path = []
@@ -188,12 +190,15 @@ def re_alignment_parallel(args):
             if (Path_weight > Max_path_weight):
                 Max_path_weight = Path_weight
                 Max_path = hop
+        key_path_end_time = time.time()
+        key_path_running_time = key_path_end_time - key_path_start_time
+        align_peak_start_time = time.time()
         matched_peaks,score = realign_path(Max_path)
+        align_peak_end_time = time.time()
+        align_peak_running_time = align_peak_end_time - align_peak_start_time
         if score >= 0.85:
             print(Max_path)
         if matched_peaks != "no match":
-            G_all_pairs_realignment.add_edge(node1,node2)
-            G_all_pairs_realignment[node1][node2]['Cosine']=score
             return (node1,node2,score)
         else:
             return
@@ -243,10 +248,10 @@ if __name__ == '__main__':
             spec_dic[int(params['scans'])] = SpectrumTuple(precursor_value, charge, filtered_mz, norm_intensity(filtered_intensities))
 
         with Pool(processes=28, maxtasksperchild=1000) as pool:
-            # define the range of values you want to loop over
+
             values = [[node1, node2] for [node1, node2] in nx.non_edges(G_all_pairs)]
-            # apply the function to each value in the loop using imap_unordered
-            results = list(tqdm(pool.imap(re_alignment_parallel, values), total=len(values)))
+
+            results = list(pool.imap(re_alignment_parallel, values))
             # print the results
         result_file_path = "./alignment_results/" + library + "_realignment.pkl"
         with open(result_file_path, 'wb') as f:

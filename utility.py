@@ -100,6 +100,30 @@ def fingerprint_dic_construct(G):
             #print(index+1)
             continue
     return dic
+def fingerprint_FBMN_dic_construct(G):
+    dic={}
+    for index in tqdm(range(len(G))):
+        try:
+            if (G.iloc[index]['Smiles'] == " " or pd.isna(G.iloc[index]['Smiles'])):
+                print("None smiles data, try InCHI")
+                scan = G.iloc[index]['#Scan#']
+                inchi = G.iloc[index]['INCHI'].replace('"',"")
+                mol = Chem.MolFromInchi(inchi)
+                fp = FingerprintMol(mol)
+                dic[scan] = fp
+            else:
+                smiles=G.iloc[index]['Smiles']
+                scan = G.iloc[index]['#Scan#']
+                #print(smiles)
+                mol = Chem.MolFromSmiles(smiles.replace('\\\\','\\'))
+                fp=FingerprintMol(mol)
+                dic[scan]=fp
+        except Exception:
+            #print(index+1)
+            continue
+    for k,v in dic.items():
+        print(k,v)
+    return dic
 
 def fingerprint_dic_construct_InCHI(G):
     dic={}
