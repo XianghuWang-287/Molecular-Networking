@@ -47,14 +47,28 @@ if __name__ == '__main__':
         print("starting benchmarking library:"+library)
         summary_file_path = "./data/summary/"+library+"_summary.tsv"
         merged_pairs_file_path = "./data/merged_paris/"+library+"_merged_pairs.tsv"
-        cluster_summary_df = pd.read_csv(summary_file_path, sep='\t',on_bad_lines='warn')
+        cluster_summary_df = pd.read_csv(summary_file_path, sep='\t')
         print(cluster_summary_df)
         all_pairs_df = pd.read_csv(merged_pairs_file_path, sep='\t')
         # all_pairs_df = all_pairs_df.apply(pd.to_numeric, errors='coerce')
         G_all_pairs = nx.from_pandas_edgelist(all_pairs_df, "CLUSTERID1", "CLUSTERID2", "Cosine")
+        print(cluster_summary_df)
+        for idx, row in cluster_summary_df.iterrows():
+            # Use 'scan' as the node identifier
+            node_id = row['scan']
+            # Check if the node exists in the graph
+            if G_all_pairs.has_node(node_id):
+                # Iterate through all columns except 'scan' to add attributes to the node
+                attrs = {col: row[col] for col in cluster_summary_df.columns if col != 'scan'}
+                nx.set_node_attributes(G_all_pairs, {node_id: attrs})
+
+        # Output the graph to a GraphML file
+        output_file_path = f"./network.graphml"
+        nx.write_graphml(G_all_pairs, output_file_path)
+        print(f"GraphML file written for library")
         print('graph with {} nodes and {} edges'.format(G_all_pairs.number_of_nodes(), G_all_pairs.number_of_edges()))
         print("constructing dic for finger print")
-        dic_fp = fingerprint_FBMN_dic_construct(cluster_summary_df)
+        dic_fp = fingerprint_dic_construct(cluster_summary_df)
         x_max_number = [x for x in range(1, 40, 2)]
         y_max_number = [y for y in range(2, 402, 20)]
         y_weight_avg = []
